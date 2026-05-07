@@ -60,7 +60,7 @@ export function App() {
       <ThisIsFine fires={fires} />
 
       <ul className="services">
-        {statuses.map((s) => (
+        {statuses.map((s, i) => (
           <li key={s.config.id} className={`service sev-${s.severity}`}>
             <div className="row">
               <span className="dot" aria-hidden />
@@ -69,7 +69,7 @@ export function App() {
               </a>
               <span className="desc">{s.description}</span>
             </div>
-            <p className="comment">"{pickComment(s.config.id, s.severity)}"</p>
+            <p className="comment">"{pickComment(i, s.severity)}"</p>
           </li>
         ))}
       </ul>
