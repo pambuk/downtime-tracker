@@ -1,7 +1,7 @@
-import normal from "./assets/status-dog/status-dog-0-normal.png";
-import oneFlame from "./assets/status-dog/status-dog-1-one-flame.png";
-import moreFlames from "./assets/status-dog/status-dog-2-more-flames.png";
-import roomOnFire from "./assets/status-dog/status-dog-3-room-on-fire.png";
+import normal from "./assets/status-dog-smile/status-dog-smile-0-normal.png";
+import oneFlame from "./assets/status-dog-smile/status-dog-smile-1-one-flame.png";
+import moreFlames from "./assets/status-dog-smile/status-dog-smile-2-more-flames.png";
+import roomOnFire from "./assets/status-dog-smile/status-dog-smile-3-room-on-fire.png";
 
 interface Props {
   fires: number;
