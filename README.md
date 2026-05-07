@@ -1,12 +1,41 @@
-
 # Status tracker
 
-Track statuses of services important to my work
+A browser-only dashboard that polls the status pages of services and displays them with appropriate number of fires.
 
-https://www.githubstatus.com/
-https://status.claude.com/
-https://status.openai.com/
+![screenshot](screenshot.png)
 
-Upon checking the information about up/down status should be briefly displayed with sarcastic comment (can be a hardcoded list of sentences, maybe related to severity of the status).
+## Tracked services
 
-There should also be a 'this is fine' dog with number of fires depending on the number of outages.
+- [GitHub](https://www.githubstatus.com/)
+- [Claude / Anthropic](https://status.claude.com/)
+- [OpenAI](https://status.openai.com/)
+
+## Getting started
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). The page auto-refreshes statuses every 60 seconds.
+
+## Stack
+
+- Vite 6 + React 19 + TypeScript 5.7
+- No backend — fetches Statuspage v2 endpoints (`/api/v2/summary.json`) directly from the browser (CORS is allowed by all tracked services)
+
+## Adding a service
+
+Append an entry to `SERVICES` in `src/services.ts`. The service must be hosted on Statuspage so the `/api/v2/summary.json` endpoint is available.
+
+## Build
+
+```bash
+npm run build      # typecheck + production build
+npm run typecheck  # typecheck only (faster)
+npm run preview    # serve dist/ locally
+```
+
+## License
+
+[MIT](LICENSE)
