@@ -9,6 +9,7 @@ A browser-only dashboard that polls the status pages of services and displays th
 - [GitHub](https://www.githubstatus.com/)
 - [Claude / Anthropic](https://status.claude.com/)
 - [OpenAI](https://status.openai.com/)
+- [DocPlanner](https://status.docplanner.com/)
 
 ## Getting started
 
