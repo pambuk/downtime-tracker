@@ -15,6 +15,8 @@ export function App() {
       fetchedAt: 0,
     })),
   );
+  const [lastFetch, setLastFetch] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +25,7 @@ export function App() {
       const next = await fetchAllStatuses();
       if (!cancelled) {
         setStatuses(next);
+        setLastFetch(Date.now());
         setLoading(false);
       }
     };
@@ -34,14 +37,23 @@ export function App() {
     };
   }, []);
 
+  // Tick once a second so the "updated Ns ago" display stays current.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const fires = statuses.filter((s) => isOnFire(s.severity)).length;
+  const agoSeconds = lastFetch ? Math.max(0, Math.floor((now - lastFetch) / 1000)) : null;
 
   return (
     <main className="app">
       <header>
         <h1>Downtime Tracker</h1>
         <p className="subtitle">
-          {loading ? "Checking…" : `${fires} on fire of ${statuses.length}`}
+          {loading
+            ? "Checking…"
+            : `${fires} on fire of ${statuses.length} · updated ${formatAgo(agoSeconds)}`}
         </p>
       </header>
 
@@ -67,4 +79,11 @@ export function App() {
 
 function isOnFire(severity: Severity): boolean {
   return severity === "minor" || severity === "major" || severity === "critical";
+}
+
+function formatAgo(seconds: number | null): string {
+  if (seconds === null || seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ago`;
 }
