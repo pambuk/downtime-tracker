@@ -4,6 +4,7 @@ export const SERVICES: ServiceConfig[] = [
   { id: "github", name: "GitHub", url: "https://www.githubstatus.com" },
   { id: "claude", name: "Claude", url: "https://status.claude.com" },
   { id: "openai", name: "OpenAI", url: "https://status.openai.com" },
+  { id: "docplanner", name: "DocPlanner", url: "https://status.docplanner.com" },
 ];
 
 export async function fetchStatus(config: ServiceConfig): Promise<ServiceStatus> {
