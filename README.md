@@ -37,6 +37,10 @@ npm run typecheck  # typecheck only (faster)
 npm run preview    # serve dist/ locally
 ```
 
+## Credits
+
+The "this is fine" dog images were generated using [Codex](https://openai.com/codex).
+
 ## License
 
 [MIT](LICENSE)
