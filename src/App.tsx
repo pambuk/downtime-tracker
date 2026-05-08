@@ -45,7 +45,7 @@ export function App() {
                     const newFires = next.filter((s) =>
                         isOnFire(s.severity),
                     ).length;
-                    void notifyChangeEvents(events, newFires);
+                    void notifyChangeEvents(events, newFires, next.length);
                 }
             }
             prevStatusesRef.current = next;
@@ -84,7 +84,7 @@ export function App() {
                 </p>
             </header>
 
-            <ThisIsFine fires={fires} />
+            <ThisIsFine fires={fires} total={statuses.length} />
 
             <ul className="services">
                 {statuses.map((s, i) => (

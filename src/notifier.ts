@@ -16,13 +16,16 @@ import dog0 from "./assets/status-dog-smile/status-dog-smile-0-normal.png";
 import dog1 from "./assets/status-dog-smile/status-dog-smile-1-one-flame.png";
 import dog2 from "./assets/status-dog-smile/status-dog-smile-2-more-flames.png";
 import dog3 from "./assets/status-dog-smile/status-dog-smile-3-room-on-fire.png";
+import dogAllDown from "./assets/status-dog-smile/status-dog-smile-4-all-incidents.png";
 
 const DOG_BROWSER_URLS = [dog0, dog1, dog2, dog3];
 
-function dogIndex(fires: number): number {
+function pickDogUrl(fires: number, total: number): string {
+  if (total > 0 && fires >= total) return dogAllDown;
   // Same convention as ThisIsFine.tsx: clamp to the last image so 3+
   // fires all use the "room on fire" dog.
-  return Math.min(Math.max(fires, 0), DOG_BROWSER_URLS.length - 1);
+  const idx = Math.min(Math.max(fires, 0), DOG_BROWSER_URLS.length - 1);
+  return DOG_BROWSER_URLS[idx];
 }
 
 function formatEvent(e: ChangeEvent): { title: string; body: string } {
@@ -70,13 +73,16 @@ function logEvents(events: ChangeEvent[]): void {
  * of them activates the Tauri app (default macOS behavior) which brings
  * the window to the front — no extra wiring needed.
  *
- * `fireCount` is unused on the desktop (where the visual is the bundle
- * icon, picked once at build time) but kept in the signature so the
- * browser fallback can pick a per-notification icon matching the page.
+ * `fireCount` and `serviceCount` are unused on the desktop (where the
+ * visual is the bundle icon, picked once at build time) but kept in the
+ * signature so the browser fallback can pick a per-notification icon
+ * matching the page — including the "all services down" dog when
+ * `fireCount >= serviceCount`.
  */
 export async function notifyChangeEvents(
   events: ChangeEvent[],
   fireCount: number,
+  serviceCount: number,
 ): Promise<void> {
   if (events.length === 0) return;
   logEvents(events);
@@ -112,7 +118,7 @@ export async function notifyChangeEvents(
   }
   if (Notification.permission !== "granted") return;
 
-  const icon = DOG_BROWSER_URLS[dogIndex(fireCount)];
+  const icon = pickDogUrl(fireCount, serviceCount);
   for (const e of events) {
     const { title, body } = formatEvent(e);
     new Notification(title, { body, icon });
