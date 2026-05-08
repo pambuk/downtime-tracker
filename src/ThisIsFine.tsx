@@ -20,9 +20,11 @@ export function ThisIsFine({ fires }: Props) {
   return (
     <div className="this-is-fine">
       <img src={stage.src} alt={stage.label} />
-      <div className="speech" aria-hidden>
-        this is fine.
-      </div>
+      {fires > 2 && (
+        <div className="speech" aria-hidden>
+          this is fine.
+        </div>
+      )}
     </div>
   );
 }
