@@ -7,7 +7,7 @@ import { detectChanges } from "./changes";
 import { openExternal } from "./runtime";
 import { notifyChangeEvents } from "./notifier";
 
-const REFRESH_MS = 5_000;
+const REFRESH_MS = 60_000;
 
 export function App() {
     const [statuses, setStatuses] = useState<ServiceStatus[]>(() =>

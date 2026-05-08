@@ -52,17 +52,7 @@ export const SERVICES: ServiceConfig[] = [
 
 export async function fetchStatus(config: ServiceConfig): Promise<ServiceStatus> {
     const fetchedAt = Date.now();
-    // TEMP: flip GitHub between "none" and "major" every ~10 seconds so the
-    // detector sees transitions and fires notifications. Remove before committing.
-    if (config.id === "github") {
-        const onFire = Math.floor(Date.now() / 10_000) % 2 === 1;
-        return {
-            config,
-            severity: onFire ? "major" : "none",
-            description: onFire ? "TEST: simulated outage" : "All Systems Operational",
-            fetchedAt,
-        };
-    }
+
     try {
         const res = await fetch(`${config.url}/api/v2/summary.json`, {
             cache: "no-store",
