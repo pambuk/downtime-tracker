@@ -4,16 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Stack
 
-Vite 6 + React 19 + TypeScript 5.7. Browser-only — no backend. Calls Statuspage v2 endpoints (`/api/v2/summary.json`) directly from the client; these allow CORS.
+Vite 6 + React 19 + TypeScript 5.7 for the UI. Two delivery targets share the same `src/`:
+
+- **Web build** — browser-only, no backend, calls Statuspage v2 endpoints (`/api/v2/summary.json`) directly from the client (CORS allowed).
+- **Desktop build** — Tauri 2 wraps the same Vite build in a native macOS window. Rust shell lives in `src-tauri/`. Requires Rust toolchain (`rustup`) installed locally.
+
+Tauri-specific code paths must be guarded with a runtime check (`'__TAURI_INTERNALS__' in window`) so the web build keeps working without it.
 
 ## Commands
 
+Web (browser):
 - `npm run dev` — Vite dev server with HMR
 - `npm run build` — runs `tsc -b` (typecheck via project references) then `vite build`
 - `npm run typecheck` — `tsc -b --noEmit`, faster than full build
 - `npm run preview` — serve the built `dist/` locally
 
-There is no test runner or linter configured yet. `npm run build` is the de-facto verification step — it fails on any type error.
+Desktop (Tauri):
+- `npm run tauri:dev` — boots Vite dev server then launches the native window with HMR
+- `npm run tauri:build` — produces a signed-ready `.app` / `.dmg` in `src-tauri/target/release/bundle/`
+- `npm run tauri -- <subcommand>` — escape hatch for any other Tauri CLI command (e.g. `info`, `icon`)
+
+There is no test runner or linter configured yet. `npm run build` is the de-facto verification step for the web build; the first `npm run tauri:dev` will additionally trigger a Cargo build (slow only on first run).
 
 ## Architecture
 
@@ -22,8 +33,12 @@ Single-page React app, all logic client-side:
 - `src/services.ts` — `SERVICES` registry (GitHub, Claude, OpenAI) and `fetchStatus` / `fetchAllStatuses`. Network failures don't reject; they resolve to a `ServiceStatus` with `severity: "unknown"` so the UI can render uniformly.
 - `src/types.ts` — `Indicator` mirrors Statuspage's five values (`none | minor | major | critical | maintenance`); `Severity = Indicator | "unknown"` adds the local-only fetch-failure state.
 - `src/comments.ts` — sarcastic comments keyed by severity. `pickComment(serviceIndex, severity)` picks a stable line for `(severity, serviceIndex)`: the severity hash sets a rotating starting point in the pool, then `serviceIndex` is added on top so N services sharing one severity get N distinct lines (provided the pool has at least N entries — most do, with ~10 lines per severity). Earlier versions hashed `serviceId + severity`, which collided when several services shared a state.
-- `src/ThisIsFine.tsx` — the dog. Renders one of 4 PNGs from `src/assets/status-dog/` keyed by fire count (0/1/2/3+); the last entry covers "and beyond" so the component never indexes out of bounds. A small "this is fine." HTML overlay sits on top of the image (the PNGs themselves don't include the speech bubble). Fire count comes from `App` and is "services where `severity ∈ {minor, major, critical}`". Maintenance and unknown deliberately don't count as fires.
-- `src/App.tsx` — owns the polling loop (`REFRESH_MS = 60_000`), seeds initial state with `severity: "unknown"` so the first render has a consistent shape, and uses a `cancelled` flag to drop late responses after unmount.
+- `src/ThisIsFine.tsx` — the dog. Renders one of 4 PNGs from `src/assets/status-dog-smile/` keyed by fire count (0/1/2/3+); the last entry covers "and beyond" so the component never indexes out of bounds. A small "this is fine." HTML overlay sits on top of the image (the PNGs themselves don't include the speech bubble). Fire count comes from `App` and is "services where `severity ∈ {minor, major, critical}`". Maintenance and unknown deliberately don't count as fires.
+- `src/App.tsx` — owns the polling loop (`REFRESH_MS = 60_000`), seeds initial state with `severity: "unknown"` so the first render has a consistent shape, and uses a `cancelled` flag to drop late responses after unmount. After each successful fetch it diffs against `prevStatusesRef.current` via `detectChanges` and feeds the events to `notifyChangeEvents` along with the new fire count.
+- `src/changes.ts` — pure `detectChanges(prev, next)` returning `ChangeEvent[]`. Rules: ok→fire emits `incident-new`, fire→bigger fire emits `incident-worsened`, fire→ok emits `recovered`. `unknown` and `maintenance` are rank-0 (same as `none`) so fetch failures and planned maintenance don't generate events, and the initial `unknown → real` transition on first load is suppressed by `App` skipping detection until the second tick.
+- `src/runtime.ts` — runtime detection for Tauri (`isTauri()`) plus `openExternal(url)`, which routes through `@tauri-apps/plugin-opener` in the desktop build (otherwise the webview blocks the navigation) and falls back to `window.open` in the browser. Anything that needs to differ between targets goes through this module.
+- `src/notifier.ts` — `notifyChangeEvents(events, fireCount)`. Tauri path sends text-only notifications via `@tauri-apps/plugin-notification`; the visual identity is the app's bundle icon (currently the 1-flame dog, generated by `npm run tauri -- icon src/assets/status-dog-smile/status-dog-smile-1-one-flame.png`). We attempted per-notification dog images via `UNNotificationAttachment` and abandoned it: the macOS plugin path silently dropped the attachment in both `tauri dev` (Terminal-attributed identity) and `tauri build` (no obvious cause; suspected interaction with macOS Tahoe's stricter notification handling and unsigned bundles). If anyone revisits, the work would be a custom Rust command using `objc2-user-notifications` directly rather than the plugin's `attachments` field. Browser path uses the Web Notifications API and *does* pass an `icon` URL, since browsers render that reliably; image picked by fire-count using the same clamping as `ThisIsFine`. macOS handles stacking automatically; clicking a notification activates the app (no extra wiring).
+- `src-tauri/` — Rust shell for the desktop build. `tauri.conf.json` controls window/identifier/bundle config. `src/lib.rs` is the entry point where plugins (`tauri-plugin-opener`, `tauri-plugin-notification`, `tauri-plugin-log`) get registered. Permissions for those plugins are declared in `capabilities/default.json`. The `icons/` folder is the regenerated dog-themed icon set; rerun `npm run tauri -- icon <source.png>` to swap it.
 
 ## Conventions
 
