@@ -48,12 +48,25 @@ pub fn run() {
       let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
       let menu = Menu::with_items(app, &[&quit])?;
 
-      // Tray icon. Reuses the bundle icon (the dog) so the menu bar visual
-      // matches the app icon used elsewhere. Left-click toggles the
-      // window's visibility and brings it to front; right-click opens the
-      // context menu.
+      // Tray icon. We use a separate monochrome flame *template* image
+      // here rather than the colorful bundle dog: macOS menu-bar icons are
+      // expected to be black-on-transparent template images so the OS can
+      // render them in the right shade for the current menu-bar theme
+      // (light/dark, hover, active). Using the bundle icon directly makes
+      // the tray entry look out of place next to other system icons.
+      //
+      // `include_bytes!` embeds the PNG in the binary at compile time —
+      // no runtime path resolution, works the same in `tauri dev` and in
+      // the built `.app`. Source for this image lives in
+      // src-tauri/icon-source/tray-icon/.
+      let tray_icon = tauri::image::Image::from_bytes(include_bytes!(
+        "../icon-source/tray-icon/flameTemplate@2x.png"
+      ))
+      .expect("invalid tray icon");
+
       let _tray = TrayIconBuilder::with_id("main")
-        .icon(app.default_window_icon().expect("missing default icon").clone())
+        .icon(tray_icon)
+        .icon_as_template(true)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
