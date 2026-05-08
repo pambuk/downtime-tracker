@@ -24,4 +24,15 @@ export interface StatuspageSummary {
     indicator: Indicator;
     description: string;
   };
+  incidents?: StatuspageIncident[];
+}
+
+// Statuspage incident impact values (superset of Indicator with "none").
+export type IncidentImpact = "none" | "minor" | "major" | "critical" | "maintenance";
+
+export interface StatuspageIncident {
+  id: string;
+  name: string;
+  impact: IncidentImpact;
+  resolved_at: string | null;
 }
