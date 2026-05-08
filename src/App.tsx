@@ -9,27 +9,28 @@ import { notifyChangeEvents } from "./notifier";
 
 const REFRESH_MS = 60_000;
 
+function initialStatuses(): ServiceStatus[] {
+    return SERVICES.map((config) => ({
+        config,
+        severity: "unknown" as Severity,
+        description: "Loading…",
+        fetchedAt: 0,
+    }));
+}
+
 export function App() {
-    const [statuses, setStatuses] = useState<ServiceStatus[]>(() =>
-        SERVICES.map((config) => ({
-            config,
-            severity: "unknown" as Severity,
-            description: "Loading…",
-            fetchedAt: 0,
-        })),
-    );
+    const [statuses, setStatuses] = useState<ServiceStatus[]>(initialStatuses);
 
     const [lastFetch, setLastFetch] = useState(0);
     const [now, setNow] = useState(() => Date.now());
     const [loading, setLoading] = useState(true);
 
-    // Snapshot of the last successfully-fetched statuses. Held in a ref (not
-    // state) so the polling loop can read it without re-creating the effect,
-    // and so detection only runs when *new* fetched data arrives — not on
-    // unrelated re-renders. `null` until the first fetch completes, which is
-    // how we suppress phantom "incident" events for the initial unknown→real
-    // transition.
-    const prevStatusesRef = useRef<ServiceStatus[] | null>(null);
+    // Snapshot used only for notification detection. Held in a ref (not state)
+    // so the polling loop can read it without re-creating the effect, and so
+    // detection only runs when *new* fetched data arrives — not on unrelated
+    // re-renders. Seeded with the loading snapshot so a service that is already
+    // in an incident on first fetch still emits a notification.
+    const prevStatusesRef = useRef<ServiceStatus[]>(statuses);
 
     useEffect(() => {
         let cancelled = false;
@@ -37,18 +38,19 @@ export function App() {
             const next = await fetchAllStatuses();
             if (cancelled) return;
 
-            if (prevStatusesRef.current) {
-                const events = detectChanges(prevStatusesRef.current, next);
-                if (events.length > 0) {
-                    // Pass the *new* fire count so the notification's dog image
-                    // matches the dog about to render on the page.
-                    const newFires = next.filter((s) =>
-                        isOnFire(s.severity),
-                    ).length;
-                    void notifyChangeEvents(events, newFires, next.length);
-                }
+            const events = detectChanges(prevStatusesRef.current, next);
+            if (events.length > 0) {
+                // Pass the *new* fire count so the notification's dog image
+                // matches the dog about to render on the page.
+                const newFires = next.filter((s) =>
+                    isOnFire(s.severity),
+                ).length;
+                void notifyChangeEvents(events, newFires, next.length);
             }
-            prevStatusesRef.current = next;
+            prevStatusesRef.current = updateDetectionBaseline(
+                prevStatusesRef.current,
+                next,
+            );
 
             setStatuses(next);
             setLastFetch(Date.now());
@@ -125,6 +127,17 @@ function isOnFire(severity: Severity): boolean {
     return (
         severity === "minor" || severity === "major" || severity === "critical"
     );
+}
+
+function updateDetectionBaseline(
+    prev: ServiceStatus[],
+    next: ServiceStatus[],
+): ServiceStatus[] {
+    const prevById = new Map(prev.map((s) => [s.config.id, s]));
+    return next.map((curr) => {
+        if (curr.severity !== "unknown") return curr;
+        return prevById.get(curr.config.id) ?? curr;
+    });
 }
 
 function formatAgo(seconds: number | null): string {

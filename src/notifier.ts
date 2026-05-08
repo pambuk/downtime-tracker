@@ -35,9 +35,9 @@ function formatEvent(e: ChangeEvent): { title: string; body: string } {
         title: `${e.service.config.name} on fire`,
         body: e.service.description,
       };
-    case "incident-worsened":
+    case "severity-changed":
       return {
-        title: `${e.service.config.name} got worse`,
+        title: `${e.service.config.name} severity changed`,
         body: `${e.from} → ${e.to}: ${e.service.description}`,
       };
     case "recovered":
@@ -52,11 +52,13 @@ function formatEvent(e: ChangeEvent): { title: string; body: string } {
 // permission, so you can verify the detection is wiring up before granting
 // macOS notification access.
 function logEvents(events: ChangeEvent[]): void {
-  const newOrWorse = events.filter(
-    (e) => e.kind === "incident-new" || e.kind === "incident-worsened",
+  const activeIncidentEvents = events.filter(
+    (e) => e.kind === "incident-new" || e.kind === "severity-changed",
   );
-  if (newOrWorse.length > 1) {
-    const names = newOrWorse.map((e) => e.service.config.name).join(", ");
+  if (activeIncidentEvents.length > 1) {
+    const names = activeIncidentEvents
+      .map((e) => e.service.config.name)
+      .join(", ");
     console.log(`[downtime] Multiple services failing: ${names}`);
   }
   for (const e of events) {
