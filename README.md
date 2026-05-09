@@ -10,6 +10,7 @@ A dashboard that polls the status pages of services and displays them with appro
 - [Claude / Anthropic](https://status.claude.com/)
 - [OpenAI](https://status.openai.com/)
 - [DocPlanner](https://status.docplanner.com/)
+- [Jira](https://jira-software.status.atlassian.com/)
 
 ## Getting started
 
