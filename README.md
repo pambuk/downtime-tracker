@@ -33,6 +33,24 @@ npm run tauri:dev
 
 The app lives in the menu bar. Click the tray icon to show/hide the window. Right-click for a menu with a Quit option. Native notifications fire when a service changes status.
 
+### Local notification testing
+
+To test tray/background notifications without waiting for a real outage, run the app with a local fake Statuspage service:
+
+```bash
+npm run tauri:dev:fake
+```
+
+Open the app once from the tray and grant notification permission, then hide it again. From another terminal, change the fake service status:
+
+```bash
+curl "http://127.0.0.1:8787/set?indicator=minor"     # incident-new
+curl "http://127.0.0.1:8787/set?indicator=major"     # severity-changed
+curl "http://127.0.0.1:8787/set?indicator=none"      # recovered
+```
+
+The app polls every 60 seconds, so the notification should appear on the next refresh while the window is still hidden.
+
 ## Stack
 
 - Vite 6 + React 19 + TypeScript 5.7

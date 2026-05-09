@@ -15,6 +15,28 @@ const SEVERITY_RANK: Record<Indicator, number> = {
     none: 0,
 };
 
+const FAKE_STATUSPAGE_URL = import.meta.env.VITE_FAKE_STATUSPAGE_URL;
+
+function serviceList(): ServiceConfig[] {
+    const services: ServiceConfig[] = [
+        { id: "github", name: "GitHub", url: "https://www.githubstatus.com" },
+        { id: "claude", name: "Claude", url: "https://status.claude.com" },
+        { id: "openai", name: "OpenAI", url: "https://status.openai.com" },
+        { id: "docplanner", name: "DocPlanner", url: "https://status.docplanner.com" },
+        { id: "jira", name: "Jira", url: "https://jira-software.status.atlassian.com" },
+    ];
+
+    if (FAKE_STATUSPAGE_URL) {
+        services.push({
+            id: "local-fake",
+            name: "Local Fake",
+            url: FAKE_STATUSPAGE_URL.replace(/\/$/, ""),
+        });
+    }
+
+    return services;
+}
+
 function promoteForIncidents(
     indicator: Indicator,
     description: string,
@@ -42,13 +64,7 @@ function promoteForIncidents(
     };
 }
 
-export const SERVICES: ServiceConfig[] = [
-    { id: "github", name: "GitHub", url: "https://www.githubstatus.com" },
-    { id: "claude", name: "Claude", url: "https://status.claude.com" },
-    { id: "openai", name: "OpenAI", url: "https://status.openai.com" },
-    { id: "docplanner", name: "DocPlanner", url: "https://status.docplanner.com" },
-    { id: "jira", name: "Jira", url: "https://jira-software.status.atlassian.com" },
-];
+export const SERVICES: ServiceConfig[] = serviceList();
 
 export async function fetchStatus(config: ServiceConfig): Promise<ServiceStatus> {
     const fetchedAt = Date.now();
