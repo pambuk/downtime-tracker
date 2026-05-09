@@ -23,6 +23,10 @@ pub fn run() {
       if window.label() == "main" {
         if let WindowEvent::CloseRequested { api, .. } = event {
           api.prevent_close();
+          #[cfg(target_os = "macos")]
+          let _ = window.app_handle().hide();
+
+          #[cfg(not(target_os = "macos"))]
           let _ = window.hide();
         }
       }
@@ -84,11 +88,18 @@ pub fn run() {
             let app = tray.app_handle();
             if let Some(window) = app.get_webview_window("main") {
               if window.is_visible().unwrap_or(false) {
+                #[cfg(target_os = "macos")]
+                let _ = app.hide();
+
+                #[cfg(not(target_os = "macos"))]
                 let _ = window.hide();
               } else {
                 // Show at the window's last known position. macOS
                 // remembers it across hide/show; first launch uses the
                 // OS-default centering.
+                #[cfg(target_os = "macos")]
+                let _ = app.show();
+
                 let _ = window.show();
                 let _ = window.set_focus();
               }
