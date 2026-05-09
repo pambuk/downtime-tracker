@@ -21,6 +21,7 @@
                 "decorations": true,
                 "resizable": true,
                 "skipTaskbar": true,
+                "backgroundThrottling": "disabled",
                 "visible": false,
                 "fullscreen": false
             }

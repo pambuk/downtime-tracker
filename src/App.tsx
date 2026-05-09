@@ -4,8 +4,11 @@ import type { ServiceStatus, Severity } from "./types";
 import { pickComment } from "./comments";
 import { ThisIsFine } from "./ThisIsFine";
 import { detectChanges } from "./changes";
-import { openExternal } from "./runtime";
-import { notifyChangeEvents } from "./notifier";
+import { isTauri, openExternal } from "./runtime";
+import {
+    ensureTauriNotificationPermission,
+    notifyChangeEvents,
+} from "./notifier";
 
 const REFRESH_MS = 60_000;
 
@@ -61,6 +64,41 @@ export function App() {
         return () => {
             cancelled = true;
             clearInterval(id);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isTauri()) return;
+
+        let cancelled = false;
+        let cleanup: (() => void) | undefined;
+
+        const requestWhenVisible = async () => {
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            const appWindow = getCurrentWindow();
+
+            if (await appWindow.isVisible()) {
+                void ensureTauriNotificationPermission();
+            }
+
+            const unlisten = await appWindow.onFocusChanged(
+                ({ payload: focused }) => {
+                    if (focused) void ensureTauriNotificationPermission();
+                },
+            );
+
+            if (cancelled) {
+                unlisten();
+            } else {
+                cleanup = unlisten;
+            }
+        };
+
+        void requestWhenVisible();
+
+        return () => {
+            cancelled = true;
+            cleanup?.();
         };
     }, []);
 

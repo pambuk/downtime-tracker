@@ -19,6 +19,7 @@ import dog3 from "./assets/status-dog-smile/status-dog-smile-3-room-on-fire.png"
 import dogAllDown from "./assets/status-dog-smile/status-dog-smile-4-all-incidents.png";
 
 const DOG_BROWSER_URLS = [dog0, dog1, dog2, dog3];
+let tauriPermissionRequest: Promise<boolean> | null = null;
 
 function pickDogUrl(fires: number, total: number): string {
   if (total > 0 && fires >= total) return dogAllDown;
@@ -67,6 +68,29 @@ function logEvents(events: ChangeEvent[]): void {
   }
 }
 
+export async function ensureTauriNotificationPermission(): Promise<boolean> {
+  if (!isTauri()) return false;
+  if (tauriPermissionRequest) return tauriPermissionRequest;
+
+  tauriPermissionRequest = (async () => {
+    const { isPermissionGranted, requestPermission } = await import(
+      "@tauri-apps/plugin-notification"
+    );
+
+    if (await isPermissionGranted()) return true;
+    if (
+      typeof Notification !== "undefined" &&
+      Notification.permission === "denied"
+    ) {
+      return false;
+    }
+
+    return (await requestPermission()) === "granted";
+  })();
+
+  return tauriPermissionRequest;
+}
+
 /**
  * Notify the user about each change event.
  *
@@ -90,18 +114,11 @@ export async function notifyChangeEvents(
   logEvents(events);
 
   if (isTauri()) {
-    const {
-      isPermissionGranted,
-      requestPermission,
-      sendNotification,
-    } = await import("@tauri-apps/plugin-notification");
+    const { isPermissionGranted, sendNotification } = await import(
+      "@tauri-apps/plugin-notification"
+    );
 
-    let granted = await isPermissionGranted();
-    if (!granted) {
-      const result = await requestPermission();
-      granted = result === "granted";
-    }
-    if (!granted) return;
+    if (!(await isPermissionGranted())) return;
 
     for (const e of events) {
       const { title, body } = formatEvent(e);
