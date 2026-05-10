@@ -32,7 +32,7 @@ export function ThisIsFine({ fires, total }: Props) {
       <img src={stage.src} alt={stage.label} />
       {(allDown || fires > 2) && (
         <div className="speech" aria-hidden>
-          this is fine.
+          {allDown ? "this is not fine." : "this is fine."}
         </div>
       )}
     </div>
