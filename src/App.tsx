@@ -112,19 +112,40 @@ export function App() {
     const agoSeconds = lastFetch
         ? Math.max(0, Math.floor((now - lastFetch) / 1000))
         : null;
+    const nextCheckSeconds = lastFetch
+        ? Math.max(0, Math.ceil((REFRESH_MS - (now - lastFetch)) / 1000))
+        : null;
+    const webStatusText = loading
+        ? "Checking…"
+        : `${fires} on fire of ${statuses.length} · updated ${formatAgo(agoSeconds)}`;
+    const desktopCountdownText = formatCountdown(nextCheckSeconds);
+    const desktop = isTauri();
 
     return (
-        <main className="app">
-            <header>
-                <h1>Downtime Tracker</h1>
-                <p className="subtitle">
-                    {loading
-                        ? "Checking…"
-                        : `${fires} on fire of ${statuses.length} · updated ${formatAgo(agoSeconds)}`}
-                </p>
-            </header>
+        <main className={`app ${desktop ? "app-tauri" : "app-web"}`}>
+            {!desktop && (
+                <header>
+                    <h1>Downtime Tracker</h1>
+                    <p className="subtitle">{webStatusText}</p>
+                </header>
+            )}
 
             <ThisIsFine fires={fires} total={statuses.length} />
+
+            {desktop && (
+                <p className="subtitle desktop-status">
+                    {loading ? (
+                        "Checking…"
+                    ) : (
+                        <>
+                            {fires} on fire of {statuses.length} · next check in{" "}
+                            <span className="countdown">
+                                {desktopCountdownText}
+                            </span>
+                        </>
+                    )}
+                </p>
+            )}
 
             <ul className="services">
                 {statuses.map((s, i) => (
@@ -183,4 +204,12 @@ function formatAgo(seconds: number | null): string {
     if (seconds < 60) return `${seconds}s ago`;
     const minutes = Math.floor(seconds / 60);
     return `${minutes}m ago`;
+}
+
+function formatCountdown(seconds: number | null): string {
+    if (seconds === null) return "soon";
+    if (seconds <= 0) return "now";
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes}m`;
 }

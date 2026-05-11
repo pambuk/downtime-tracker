@@ -1,35 +1,35 @@
 {
-  "name": "downtime-tracker",
-  "private": true,
-  "version": "0.1.7",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "fake-statuspage": "node scripts/fake-statuspage.mjs",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:dev:fake": "node scripts/tauri-dev-fake.mjs",
-    "tauri:build": "tauri build"
-  },
-  "dependencies": {
-    "@tauri-apps/api": "^2.11.0",
-    "@tauri-apps/plugin-notification": "^2.3.3",
-    "@tauri-apps/plugin-opener": "^2.5.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "engines": {
-    "node": ">=20.x"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.11.1",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.5"
-  }
+    "name": "downtime-tracker",
+    "private": true,
+    "version": "0.1.8",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc -b --noEmit",
+        "fake-statuspage": "node scripts/fake-statuspage.mjs",
+        "tauri": "tauri",
+        "tauri:dev": "tauri dev",
+        "tauri:dev:fake": "node scripts/tauri-dev-fake.mjs",
+        "tauri:build": "tauri build"
+    },
+    "dependencies": {
+        "@tauri-apps/api": "^2.11.0",
+        "@tauri-apps/plugin-notification": "^2.3.3",
+        "@tauri-apps/plugin-opener": "^2.5.4",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    },
+    "engines": {
+        "node": ">=20.x"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "^2.11.1",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.3.4",
+        "typescript": "^5.7.2",
+        "vite": "^6.0.5"
+    }
 }

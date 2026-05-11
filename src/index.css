@@ -41,6 +41,10 @@ body {
     padding: 2rem 1.25rem 4rem;
 }
 
+.app-tauri {
+    padding-top: 1rem;
+}
+
 header h1 {
     margin: 0;
     font-size: 1.75rem;
@@ -60,6 +64,25 @@ header h1 {
     overflow: hidden;
     background: #1a1a1a;
     aspect-ratio: 1 / 1;
+}
+
+.app-tauri .this-is-fine {
+    border: 0;
+    border-radius: 0;
+    margin-bottom: 0.75rem;
+}
+
+.desktop-status {
+    max-width: 520px;
+    margin: 0 auto 1.5rem;
+    text-align: center;
+}
+
+.desktop-status .countdown {
+    display: inline-block;
+    min-width: 3ch;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
 }
 
 .this-is-fine img {
