@@ -80,6 +80,13 @@ npm run tauri:build
 
 Produces a `.app` and `.dmg` in `src-tauri/target/release/bundle/`.
 
+If macOS blocks a locally tested GitHub-downloaded build with “app is damaged”,
+you can remove the quarantine flag for testing only:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Downtime Tracker.app"
+```
+
 ## Credits
 
 The "this is fine" dog images were generated using [Codex](https://openai.com/codex).
