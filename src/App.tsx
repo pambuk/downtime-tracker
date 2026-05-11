@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import { fetchAllStatuses, SERVICES } from "./services";
 import type { ServiceStatus, Severity } from "./types";
 import { pickComment } from "./comments";
@@ -34,6 +35,7 @@ export function App() {
     // re-renders. Seeded with the loading snapshot so a service that is already
     // in an incident on first fetch still emits a notification.
     const prevStatusesRef = useRef<ServiceStatus[]>(statuses);
+    const desktop = isTauri();
 
     useEffect(() => {
         let cancelled = false;
@@ -68,7 +70,7 @@ export function App() {
     }, []);
 
     useEffect(() => {
-        if (!isTauri()) return;
+        if (!desktop) return;
 
         let cancelled = false;
         let cleanup: (() => void) | undefined;
@@ -100,7 +102,86 @@ export function App() {
             cancelled = true;
             cleanup?.();
         };
-    }, []);
+    }, [desktop]);
+
+    useEffect(() => {
+        if (!desktop) return;
+
+        const root = document.documentElement;
+        let hideScrollbarTimeout: number | undefined;
+
+        const updateOverflowState = () => {
+            const maxScroll = root.scrollHeight - root.clientHeight;
+            const canScroll = maxScroll > 1;
+            const trackInset = 8;
+            const trackHeight = Math.max(0, root.clientHeight - trackInset * 2);
+            const thumbHeight = canScroll
+                ? Math.max(
+                      36,
+                      Math.round(
+                          (root.clientHeight / root.scrollHeight) *
+                              trackHeight,
+                      ),
+                  )
+                : 0;
+            const thumbTravel = Math.max(0, trackHeight - thumbHeight);
+            const thumbTop =
+                trackInset +
+                (canScroll ? (window.scrollY / maxScroll) * thumbTravel : 0);
+
+            root.classList.toggle("tauri-can-scroll", canScroll);
+            root.classList.toggle(
+                "tauri-at-bottom",
+                !canScroll || window.scrollY >= maxScroll - 2,
+            );
+            root.style.setProperty(
+                "--tauri-scroll-thumb-height",
+                `${thumbHeight}px`,
+            );
+            root.style.setProperty(
+                "--tauri-scroll-thumb-top",
+                `${thumbTop}px`,
+            );
+        };
+
+        const showScrollbarBriefly = () => {
+            root.classList.add("tauri-scrolling");
+            updateOverflowState();
+
+            if (hideScrollbarTimeout !== undefined) {
+                window.clearTimeout(hideScrollbarTimeout);
+            }
+
+            hideScrollbarTimeout = window.setTimeout(() => {
+                root.classList.remove("tauri-scrolling");
+            }, 700);
+        };
+
+        root.classList.add("tauri-scroll-shell");
+        updateOverflowState();
+
+        window.addEventListener("scroll", showScrollbarBriefly, {
+            passive: true,
+        });
+        window.addEventListener("resize", updateOverflowState);
+
+        return () => {
+            if (hideScrollbarTimeout !== undefined) {
+                window.clearTimeout(hideScrollbarTimeout);
+            }
+            window.removeEventListener("scroll", showScrollbarBriefly);
+            window.removeEventListener("resize", updateOverflowState);
+            root.classList.remove(
+                "tauri-at-bottom",
+                "tauri-can-scroll",
+                "tauri-scroll-dragging",
+                "tauri-scrolling",
+                "tauri-scroll-shell",
+            );
+            root.style.removeProperty("--tauri-scroll-thumb-height");
+            root.style.removeProperty("--tauri-scroll-thumb-top");
+        };
+    }, [desktop, loading, statuses.length]);
 
     // Tick once a second so the "updated Ns ago" display stays current.
     useEffect(() => {
@@ -119,10 +200,60 @@ export function App() {
         ? "Checking…"
         : `${fires} on fire of ${statuses.length} · updated ${formatAgo(agoSeconds)}`;
     const desktopCountdownText = formatCountdown(nextCheckSeconds);
-    const desktop = isTauri();
+    const handleScrollThumbPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+        event.preventDefault();
+
+        const root = document.documentElement;
+        const maxScroll = root.scrollHeight - root.clientHeight;
+        if (maxScroll <= 0) return;
+
+        const trackInset = 8;
+        const trackHeight = Math.max(0, root.clientHeight - trackInset * 2);
+        const thumbHeight = Math.max(
+            36,
+            Math.round((root.clientHeight / root.scrollHeight) * trackHeight),
+        );
+        const thumbTravel = Math.max(1, trackHeight - thumbHeight);
+        const startY = event.clientY;
+        const startScrollY = window.scrollY;
+        const rootClasses = root.classList;
+        const thumb = event.currentTarget;
+
+        rootClasses.add("tauri-scrolling", "tauri-scroll-dragging");
+        thumb.setPointerCapture(event.pointerId);
+
+        const onPointerMove = (moveEvent: globalThis.PointerEvent) => {
+            const deltaY = moveEvent.clientY - startY;
+            window.scrollTo({
+                top: startScrollY + (deltaY / thumbTravel) * maxScroll,
+            });
+        };
+
+        const onPointerUp = () => {
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerUp);
+            window.removeEventListener("pointercancel", onPointerUp);
+            rootClasses.remove("tauri-scroll-dragging");
+            if (thumb.hasPointerCapture(event.pointerId)) {
+                thumb.releasePointerCapture(event.pointerId);
+            }
+        };
+
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp, { once: true });
+        window.addEventListener("pointercancel", onPointerUp, { once: true });
+    };
 
     return (
         <main className={`app ${desktop ? "app-tauri" : "app-web"}`}>
+            {desktop && (
+                <div
+                    aria-hidden
+                    className="tauri-scroll-thumb"
+                    onPointerDown={handleScrollThumbPointerDown}
+                />
+            )}
+
             {!desktop && (
                 <header>
                     <h1>Downtime Tracker</h1>

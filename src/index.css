@@ -35,6 +35,16 @@ body {
     color: var(--fg);
 }
 
+html.tauri-scroll-shell {
+    scrollbar-color: transparent transparent;
+    scrollbar-width: none;
+}
+
+html.tauri-scroll-shell::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
 .app {
     max-width: 720px;
     margin: 0 auto;
@@ -43,6 +53,46 @@ body {
 
 .app-tauri {
     padding-top: 1rem;
+}
+
+html.tauri-scroll-shell.tauri-can-scroll:not(.tauri-at-bottom)
+    .app-tauri::after {
+    content: "";
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+}
+
+.tauri-scroll-thumb {
+    position: fixed;
+    top: var(--tauri-scroll-thumb-top, 8px);
+    right: 4px;
+    z-index: 2;
+    width: 6px;
+    height: var(--tauri-scroll-thumb-height, 36px);
+    pointer-events: none;
+    background: rgba(26, 26, 26, 0.42);
+    border-radius: 999px;
+    cursor: default;
+    opacity: 0;
+    transition: opacity 600ms ease;
+}
+
+html.tauri-scroll-shell.tauri-scrolling.tauri-can-scroll .tauri-scroll-thumb,
+html.tauri-scroll-shell.tauri-scroll-dragging.tauri-can-scroll
+    .tauri-scroll-thumb {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+    .tauri-scroll-thumb {
+        background: rgba(244, 244, 244, 0.34);
+    }
 }
 
 header h1 {
