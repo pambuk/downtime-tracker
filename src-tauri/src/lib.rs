@@ -4,6 +4,44 @@ use tauri::{
   Manager, WindowEvent,
 };
 
+#[cfg(target_os = "macos")]
+fn show_main_window(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+  let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+  let _ = app.show();
+  let _ = window.show();
+  let _ = window.set_focus();
+}
+
+#[cfg(not(target_os = "macos"))]
+fn show_main_window(_app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+  let _ = window.show();
+  let _ = window.set_focus();
+}
+
+#[cfg(target_os = "macos")]
+fn hide_native_window(window: &tauri::Window) {
+  let app = window.app_handle();
+  let _ = app.hide();
+  let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+}
+
+#[cfg(not(target_os = "macos"))]
+fn hide_native_window(window: &tauri::Window) {
+  let _ = window.hide();
+}
+
+#[cfg(target_os = "macos")]
+fn hide_webview_window(window: &tauri::WebviewWindow) {
+  let app = window.app_handle();
+  let _ = app.hide();
+  let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+}
+
+#[cfg(not(target_os = "macos"))]
+fn hide_webview_window(window: &tauri::WebviewWindow) {
+  let _ = window.hide();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -23,11 +61,7 @@ pub fn run() {
       if window.label() == "main" {
         if let WindowEvent::CloseRequested { api, .. } = event {
           api.prevent_close();
-          #[cfg(target_os = "macos")]
-          let _ = window.app_handle().hide();
-
-          #[cfg(not(target_os = "macos"))]
-          let _ = window.hide();
+          hide_native_window(window);
         }
       }
     })
@@ -40,10 +74,9 @@ pub fn run() {
         )?;
       }
 
-      // Hide the app from the Dock and Cmd-Tab — this is a tray-resident
-      // app. The window opens as a normal windowed app when the user
-      // clicks the tray icon, but the process itself doesn't take a Dock
-      // slot.
+      // Start as a tray-resident app: no Dock or Cmd-Tab entry while the
+      // window is hidden. When the tray icon shows the window, we switch
+      // back to `Regular` so the visible app can be reached via Cmd-Tab.
       #[cfg(target_os = "macos")]
       app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
@@ -88,20 +121,12 @@ pub fn run() {
             let app = tray.app_handle();
             if let Some(window) = app.get_webview_window("main") {
               if window.is_visible().unwrap_or(false) {
-                #[cfg(target_os = "macos")]
-                let _ = app.hide();
-
-                #[cfg(not(target_os = "macos"))]
-                let _ = window.hide();
+                hide_webview_window(&window);
               } else {
                 // Show at the window's last known position. macOS
                 // remembers it across hide/show; first launch uses the
                 // OS-default centering.
-                #[cfg(target_os = "macos")]
-                let _ = app.show();
-
-                let _ = window.show();
-                let _ = window.set_focus();
+                show_main_window(app, &window);
               }
             }
           }
