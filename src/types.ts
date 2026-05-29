@@ -6,8 +6,11 @@ export type Severity = Indicator | "unknown";
 export interface ServiceConfig {
   id: string;
   name: string;
-  // Statuspage base URL (no trailing slash). Endpoint is `${url}/api/v2/summary.json`.
+  // Public status page opened from the UI.
   url: string;
+  source?: "statuspage" | "azure-rss";
+  // For non-Statuspage services, the machine-readable status feed.
+  feedUrl?: string;
 }
 
 export interface ServiceStatus {

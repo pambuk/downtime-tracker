@@ -11,6 +11,7 @@ A dashboard that polls the status pages of services and displays them with appro
 - [OpenAI](https://status.openai.com/)
 - [DocPlanner](https://status.docplanner.com/)
 - [Jira](https://jira-software.status.atlassian.com/)
+- [Azure](https://azure.status.microsoft/en-gb/status)
 
 ## Getting started
 
@@ -22,6 +23,8 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173). The page auto-refreshes statuses every 60 seconds.
+
+Azure may show as `Status unavailable` in the browser build. Unlike the other tracked services, Azure is not Statuspage-backed and its public RSS feed does not expose browser CORS headers. The macOS/Tauri app handles Azure through a narrow native fetch command, so Azure tracking works there.
 
 ### Desktop (macOS)
 
@@ -56,11 +59,12 @@ The app polls every 60 seconds, so the notification should appear on the next re
 
 - Vite 6 + React 19 + TypeScript 5.7
 - Tauri 2 (macOS desktop shell)
-- No backend — fetches Statuspage v2 endpoints (`/api/v2/summary.json`) directly from the browser (CORS is allowed by all tracked services)
+- No backend — fetches Statuspage v2 endpoints (`/api/v2/summary.json`) directly from the browser. Azure is RSS-backed; the desktop app uses a narrow native fetch command for that feed because Microsoft does not expose browser CORS headers.
 
 ## Adding a service
 
 Append an entry to `SERVICES` in `src/services.ts`. The service must be hosted on Statuspage so the `/api/v2/summary.json` endpoint is available.
+Azure is the exception: it uses Microsoft's RSS feed because the public Azure status page is not Statuspage-backed. Browser-only builds may show Azure as unavailable if the browser blocks that feed through CORS.
 
 ## Build
 

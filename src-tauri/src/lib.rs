@@ -42,6 +42,31 @@ fn hide_webview_window(window: &tauri::WebviewWindow) {
   let _ = window.hide();
 }
 
+fn is_allowed_fetch_url(url: &str) -> bool {
+  matches!(
+    url,
+    "https://rssfeed.azure.status.microsoft/en-gb/status/feed/"
+      | "https://azurestatuscdn.azureedge.net/en-gb/status/feed/"
+  )
+}
+
+#[tauri::command]
+async fn fetch_text(url: String) -> Result<String, String> {
+  if !is_allowed_fetch_url(&url) {
+    return Err("URL is not allowed for native status fetch".to_string());
+  }
+
+  let response = reqwest::get(&url)
+    .await
+    .map_err(|err| err.to_string())?;
+  let status = response.status();
+  if !status.is_success() {
+    return Err(format!("HTTP {status}"));
+  }
+
+  response.text().await.map_err(|err| err.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -65,6 +90,7 @@ pub fn run() {
         }
       }
     })
+    .invoke_handler(tauri::generate_handler![fetch_text])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
