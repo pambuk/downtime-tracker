@@ -26,6 +26,17 @@ function serviceList(): ServiceConfig[] {
         { id: "docplanner", name: "DocPlanner", url: "https://status.docplanner.com" },
         { id: "jira", name: "Jira", url: "https://jira-software.status.atlassian.com" },
         {
+            id: "slack",
+            name: "Slack",
+            url: "https://status.slack.com",
+            source: "slack-html",
+            // Slack retired its JSON status API; the live per-feature grid is
+            // only available as HTML on the (post-redirect) status site. The
+            // RSS feed is postmortems published after resolution, so it can't
+            // report current status.
+            feedUrl: "https://slack-status.com/",
+        },
+        {
             id: "azure",
             name: "Azure",
             url: "https://azure.status.microsoft/en-gb/status",
@@ -79,6 +90,10 @@ export async function fetchStatus(config: ServiceConfig): Promise<ServiceStatus>
 
     if (config.source === "azure-rss") {
         return fetchAzureRssStatus(config, fetchedAt);
+    }
+
+    if (config.source === "slack-html") {
+        return fetchSlackHtmlStatus(config, fetchedAt);
     }
 
     return fetchStatuspageStatus(config, fetchedAt);
@@ -140,6 +155,78 @@ async function fetchAzureRssStatus(
             error: err instanceof Error ? err.message : String(err),
         };
     }
+}
+
+async function fetchSlackHtmlStatus(
+    config: ServiceConfig,
+    fetchedAt: number,
+): Promise<ServiceStatus> {
+    try {
+        if (!config.feedUrl) throw new Error("Missing Slack status page URL");
+        const html = await fetchText(config.feedUrl);
+        const summary = parseSlackHtml(html);
+
+        return {
+            config,
+            severity: summary.severity,
+            description: summary.description,
+            fetchedAt,
+        };
+    } catch (err) {
+        return {
+            config,
+            severity: "unknown",
+            description: "Status unavailable",
+            fetchedAt,
+            error: err instanceof Error ? err.message : String(err),
+        };
+    }
+}
+
+// Slack's status page renders each feature row with one of these table icons;
+// the image basename is the most stable signal for that feature's state.
+const SLACK_ICON_SEVERITY: Record<string, Indicator> = {
+    TableCheck: "none",
+    TableMaintenance: "maintenance",
+    TableNotice: "minor",
+    TableIncident: "major",
+    TableOutage: "critical",
+};
+
+function parseSlackHtml(html: string): { severity: Indicator; description: string } {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+
+    // The `#services` grid is the live per-feature status; the visually similar
+    // `#services_legend` block above it uses different markup (no `.service`),
+    // so it can't leak the legend's icons into our worst-case scan.
+    const rows = Array.from(doc.querySelectorAll("#services .service"));
+    if (rows.length === 0) {
+        throw new Error("Could not find Slack status grid");
+    }
+
+    let worst: Indicator = "none";
+    const affected: string[] = [];
+    for (const row of rows) {
+        const src = row.querySelector("img")?.getAttribute("src") ?? "";
+        const key = Object.keys(SLACK_ICON_SEVERITY).find((k) => src.includes(k));
+        const sev = key ? SLACK_ICON_SEVERITY[key] : "none";
+        if (SEVERITY_RANK[sev] > SEVERITY_RANK[worst]) worst = sev;
+        if (sev !== "none") {
+            const name = row.querySelector(".bold")?.textContent?.trim();
+            if (name) affected.push(name);
+        }
+    }
+
+    if (worst === "none") {
+        return { severity: "none", description: "All features operational" };
+    }
+    return {
+        severity: worst,
+        description:
+            affected.length === 1
+                ? affected[0]
+                : `${affected.length} features affected: ${affected.join(", ")}`,
+    };
 }
 
 async function fetchText(url: string): Promise<string> {

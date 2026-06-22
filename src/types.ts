@@ -8,8 +8,9 @@ export interface ServiceConfig {
   name: string;
   // Public status page opened from the UI.
   url: string;
-  source?: "statuspage" | "azure-rss";
-  // For non-Statuspage services, the machine-readable status feed.
+  source?: "statuspage" | "azure-rss" | "slack-html";
+  // For non-Statuspage services, the machine-readable status feed (Azure RSS)
+  // or, for Slack, the live status page HTML we scrape the per-feature grid from.
   feedUrl?: string;
 }
 

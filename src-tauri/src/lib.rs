@@ -47,6 +47,9 @@ fn is_allowed_fetch_url(url: &str) -> bool {
     url,
     "https://rssfeed.azure.status.microsoft/en-gb/status/feed/"
       | "https://azurestatuscdn.azureedge.net/en-gb/status/feed/"
+      // Slack's live status page (post-redirect host). status.slack.com 301s
+      // here; we request the final URL directly to skip the redirect hop.
+      | "https://slack-status.com/"
   )
 }
 
